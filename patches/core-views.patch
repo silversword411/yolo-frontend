@@ -1,0 +1,67 @@
+--- a/api/tacticalrmm/core/views.py
++++ b/api/tacticalrmm/core/views.py
+@@ -1,4 +1,5 @@
+ import json
++import os
+ from contextlib import suppress
+ from pathlib import Path
+
+@@ -792,3 +793,58 @@ class OpenAICodeCompletion(APIView):
+             )
+
+         return Response(response_data["choices"][0]["message"]["content"])
++
++
++FRONTEND_VERSIONS_DIR = Path("/var/www/rmm/versions")
++FRONTEND_DIST_SYMLINK = Path("/var/www/rmm/dist")
++
++
++class GetFrontendVersions(APIView):
++    permission_classes = [IsAuthenticated, CoreSettingsPerms]
++
++    def get(self, request):
++        if not FRONTEND_VERSIONS_DIR.is_dir():
++            return Response({"versions": [], "active": None})
++
++        active = None
++        if FRONTEND_DIST_SYMLINK.is_symlink():
++            active = FRONTEND_DIST_SYMLINK.resolve().name
++
++        versions = []
++        for entry in sorted(FRONTEND_VERSIONS_DIR.iterdir()):
++            if entry.is_dir():
++                versions.append(
++                    {
++                        "name": entry.name,
++                        "active": entry.name == active,
++                    }
++                )
++
++        return Response({"versions": versions, "active": active})
++
++
++class SwitchFrontendVersion(APIView):
++    permission_classes = [IsAuthenticated, CoreSettingsPerms]
++
++    def post(self, request):
++        version_name = request.data.get("version")
++        if not version_name:
++            return notify_error("Version name is required")
++
++        if "/" in version_name or "\\" in version_name or ".." in version_name:
++            return notify_error("Invalid version name")
++
++        target = FRONTEND_VERSIONS_DIR / version_name
++        if not target.is_dir():
++            return notify_error(f"Version '{version_name}' not found")
++
++        tmp_link = FRONTEND_DIST_SYMLINK.parent / "dist.tmp"
++        try:
++            if tmp_link.exists() or tmp_link.is_symlink():
++                tmp_link.unlink()
++            os.symlink(str(target), str(tmp_link))
++            os.rename(str(tmp_link), str(FRONTEND_DIST_SYMLINK))
++        except OSError as e:
++            return notify_error(f"Failed to switch version: {e}")
++
++        return Response(f"Switched to {version_name}")

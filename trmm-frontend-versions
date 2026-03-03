@@ -1,0 +1,86 @@
+#!/bin/bash
+# trmm-frontend-versions
+# Manage deployed frontend versions.
+#
+# Usage:
+#   trmm-frontend-versions list              # List all versions, mark active
+#   trmm-frontend-versions active            # Show which version is active
+#   trmm-frontend-versions switch <name>     # Switch active version
+#   trmm-frontend-versions remove <name>     # Remove a version (not if active)
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+source "$SCRIPT_DIR/yolo.conf"
+
+get_active() {
+    if [ -L "$DIST_SYMLINK" ]; then
+        basename "$(readlink -f "$DIST_SYMLINK")"
+    else
+        echo "(not a symlink - run frontend-migrate-to-versioned.sh first)"
+    fi
+}
+
+case "${1:-list}" in
+    list)
+        ACTIVE=$(get_active)
+        echo "Frontend versions:"
+        for dir in "$VERSIONS_DIR"/*/; do
+            [ -d "$dir" ] || continue
+            name=$(basename "$dir")
+            if [ "$name" = "$ACTIVE" ]; then
+                echo "  * $name  (active)"
+            else
+                echo "    $name"
+            fi
+        done
+        ;;
+    active)
+        echo "Active version: $(get_active)"
+        ;;
+    switch)
+        if [ -z "$2" ]; then
+            echo "Usage: trmm-frontend-versions switch <version-name>"
+            exit 1
+        fi
+        TARGET="$VERSIONS_DIR/$2"
+        if [ ! -d "$TARGET" ]; then
+            echo "Error: Version '$2' not found in $VERSIONS_DIR"
+            echo ""
+            echo "Available versions:"
+            ls -1 "$VERSIONS_DIR"
+            exit 1
+        fi
+        ln -sfn "$TARGET" "${DIST_SYMLINK}.tmp"
+        mv -T "${DIST_SYMLINK}.tmp" "$DIST_SYMLINK"
+        echo "Switched to: $2"
+        ;;
+    remove)
+        if [ -z "$2" ]; then
+            echo "Usage: trmm-frontend-versions remove <version-name>"
+            exit 1
+        fi
+        ACTIVE=$(get_active)
+        if [ "$2" = "$ACTIVE" ]; then
+            echo "Error: Cannot remove the active version '$2'. Switch to another version first."
+            exit 1
+        fi
+        TARGET="$VERSIONS_DIR/$2"
+        if [ ! -d "$TARGET" ]; then
+            echo "Error: Version '$2' not found in $VERSIONS_DIR"
+            exit 1
+        fi
+        rm -rf "$TARGET"
+        echo "Removed version: $2"
+        ;;
+    names)
+        # Machine-readable list of version names (used by VSCode tasks)
+        for dir in "$VERSIONS_DIR"/*/; do
+            [ -d "$dir" ] || continue
+            basename "$dir"
+        done
+        ;;
+    *)
+        echo "Usage: trmm-frontend-versions {list|active|switch <name>|remove <name>}"
+        exit 1
+        ;;
+esac

@@ -1,0 +1,11 @@
+--- a/api/tacticalrmm/core/urls.py
++++ b/api/tacticalrmm/core/urls.py
+@@ -24,6 +24,8 @@ urlpatterns = [
+     path("clearcache/", views.clear_cache),
+     path("openai/generate/", views.OpenAICodeCompletion.as_view()),
+     path("webtermperms/", views.webterm_perms),
++    path("frontendversions/", views.GetFrontendVersions.as_view()),
++    path("frontendversions/switch/", views.SwitchFrontendVersion.as_view()),
+ ]
+
+ if not getattr(settings, "DEMO", False):

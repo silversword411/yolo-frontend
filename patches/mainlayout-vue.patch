@@ -1,0 +1,95 @@
+--- a/src/layouts/MainLayout.vue
++++ b/src/layouts/MainLayout.vue
+@@ -43,7 +43,35 @@
+           <q-tooltip>Back to Dashboard</q-tooltip>
+         </q-btn>
+         <q-toolbar-title>
+-          Tactical RMM<span class="text-overline q-ml-sm">v{{ currentTRMMVersion }}</span>
++          Tactical RMM<span class="text-overline q-ml-sm cursor-pointer">v{{ currentTRMMVersion }}
++            <q-menu context-menu @before-show="loadFrontendVersions">
++              <q-list dense style="min-width: 220px">
++                <q-item-label header>Frontend Versions</q-item-label>
++                <q-separator />
++                <q-item
++                  v-for="ver in frontendVersions"
++                  :key="ver.name"
++                  v-close-popup
++                  clickable
++                  :active="ver.active"
++                  active-class="text-positive"
++                  @click="switchFrontendVersion(ver.name)"
++                >
++                  <q-item-section side>
++                    <q-icon
++                      :name="ver.active ? 'check_circle' : 'radio_button_unchecked'"
++                      :color="ver.active ? 'positive' : 'grey'"
++                      size="xs"
++                    />
++                  </q-item-section>
++                  <q-item-section>{{ ver.name }}</q-item-section>
++                </q-item>
++                <q-item v-if="frontendVersions.length === 0">
++                  <q-item-section class="text-grey">No versions found</q-item-section>
++                </q-item>
++              </q-list>
++            </q-menu>
++          </span>
+           <!-- update check -->
+           <q-chip
+             v-if="updateAvailable"
+@@ -177,7 +205,7 @@
+ </template>
+ <script setup lang="ts">
+ // composition imports
+-import { computed, onMounted } from "vue";
++import { computed, onMounted, ref } from "vue";
+ import { useQuasar } from "quasar";
+ import { useIntervalFn } from "@vueuse/shared";
+ import { useDashboardStore, useAuthStore } from "src/stores/api";
+@@ -186,6 +214,7 @@ import { notifyError } from "src/utils/notify";
+
+ // webtermn
+ import { checkWebTermPerms, openWebTerminal } from "src/core/settings/api";
++import axios from "axios";
+
+ // ui imports
+ import AlertsIcon from "src/core/alerts/components/AlertsIcon.vue";
+@@ -261,6 +290,38 @@ async function openWebTerm() {
+   }
+ }
+
++// frontend version switching
++interface FrontendVersion {
++  name: string;
++  active: boolean;
++}
++
++const frontendVersions = ref<FrontendVersion[]>([]);
++
++async function loadFrontendVersions() {
++  try {
++    const { data } = await axios.get("/core/frontendversions/");
++    frontendVersions.value = data.versions;
++  } catch (e) {
++    console.error("Failed to load frontend versions", e);
++  }
++}
++
++async function switchFrontendVersion(versionName: string) {
++  try {
++    await axios.post("/core/frontendversions/switch/", { version: versionName });
++    $q.notify({
++      color: "positive",
++      message: `Switched to frontend version: ${versionName}`,
++      caption: "Reloading page...",
++      timeout: 1500,
++    });
++    setTimeout(() => location.reload(), 1500);
++  } catch (e) {
++    console.error("Failed to switch frontend version", e);
++  }
++}
++
+ onMounted(() => {
+   checkRmmVersion();
+   void getDashInfo();

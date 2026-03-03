@@ -1,0 +1,99 @@
+#!/bin/bash
+# trmm-frontend-build
+# Build the current git branch and deploy it as a named frontend version.
+#
+# Usage:
+#   trmm-frontend-build              # Build and deploy, name from git branch
+#   trmm-frontend-build --name foo   # Build and deploy with custom name
+#   trmm-frontend-build --activate   # Also switch the live symlink to this version
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+source "$SCRIPT_DIR/yolo.conf"
+
+# Parse arguments
+VERSION_NAME=""
+ACTIVATE=false
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --name)
+            VERSION_NAME="$2"
+            shift 2
+            ;;
+        --activate)
+            ACTIVATE=true
+            shift
+            ;;
+        *)
+            echo "Unknown option: $1"
+            echo "Usage: trmm-frontend-build [--name <name>] [--activate]"
+            exit 1
+            ;;
+    esac
+done
+
+# Check prerequisites
+if [ ! -d "$VERSIONS_DIR" ]; then
+    echo "Error: $VERSIONS_DIR does not exist. Run frontend-migrate-to-versioned.sh first."
+    exit 1
+fi
+
+if [ ! -f "$ENV_CONFIG_SRC" ]; then
+    echo "Error: $ENV_CONFIG_SRC not found. Cannot copy env-config.js."
+    exit 1
+fi
+
+# Determine version name from git branch if not provided
+if [ -z "$VERSION_NAME" ]; then
+    cd "$FRONTEND_SRC"
+    VERSION_NAME=$(git rev-parse --abbrev-ref HEAD)
+fi
+
+# Sanitize branch name for filesystem (replace / with -)
+VERSION_NAME=$(echo "$VERSION_NAME" | sed 's/\//-/g')
+
+VERSION_PATH="$VERSIONS_DIR/$VERSION_NAME"
+
+echo "========================================"
+echo "Frontend Build & Deploy"
+echo "========================================"
+echo "Source:  $FRONTEND_SRC"
+echo "Version: $VERSION_NAME"
+echo "Target:  $VERSION_PATH"
+echo "Activate: $ACTIVATE"
+echo "========================================"
+
+# Build
+cd "$FRONTEND_SRC"
+echo ""
+echo "Running npm run build..."
+npm run build
+
+# Deploy to versions directory
+if [ -d "$VERSION_PATH" ]; then
+    echo "Removing existing version: $VERSION_NAME"
+    rm -rf "$VERSION_PATH"
+fi
+
+mkdir -p "$VERSION_PATH"
+cp -r "$FRONTEND_SRC/dist/"* "$VERSION_PATH/"
+
+# Copy env-config.js from backup
+cp "$ENV_CONFIG_SRC" "$VERSION_PATH/env-config.js"
+
+echo "Deployed to: $VERSION_PATH"
+
+# Optionally activate
+if [ "$ACTIVATE" = true ]; then
+    ln -sfn "$VERSION_PATH" "${DIST_SYMLINK}.tmp"
+    mv -T "${DIST_SYMLINK}.tmp" "$DIST_SYMLINK"
+    echo "Activated version: $VERSION_NAME"
+fi
+
+echo ""
+echo "Done. Version '$VERSION_NAME' is ready."
+if [ "$ACTIVATE" = false ]; then
+    echo "To make it live, use: trmm-frontend-versions switch $VERSION_NAME"
+    echo "Or right-click the version number in the dashboard."
+fi
