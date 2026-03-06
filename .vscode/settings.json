@@ -1,0 +1,26 @@
+{
+  "editor.bracketPairColorization.enabled": true,
+  "editor.guides.bracketPairs": true,
+  "editor.formatOnSave": true,
+  "files.watcherExclude": {
+    "**/.git/objects/**": true,
+    "**/.git/subtree-cache/**": true,
+    "**/node_modules/": true,
+    "**/node_modules/**": true,
+    "**/repos/**/node_modules/**": true,
+    "**/env/": true,
+    "**/env/**": true
+  },
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.codeActionsOnSave": ["source.fixAll.eslint"],
+  "eslint.validate": ["javascript", "javascriptreact", "typescript", "vue"],
+  "remote.autoForwardPorts": true,
+  "remote.restoreForwardedPorts": true,
+  "forwardPorts": [9000],
+  "portsAttributes": {
+    "9000": {
+      "label": "tacticalrmm-web dev",
+      "onAutoForward": "openBrowser"
+    }
+  }
+}

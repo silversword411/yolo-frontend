@@ -1,95 +1,144 @@
-# Multi-Version Frontend System
+# yolo-frontend
 
-Run multiple frontend builds side by side and switch between them instantly from the dashboard.
+Multi-version frontend system for Tactical RMM. Run multiple frontend builds from different repos and branches side by side, switching between them instantly.
 
 ## How It Works
 
-Instead of a single `/var/www/rmm/dist` directory, each frontend build is stored as a named version under `/var/www/rmm/versions/`. A symlink at `/var/www/rmm/dist` points to the active one. Nginx follows the symlink transparently — no reload needed to switch.
+Each frontend build is stored as a named version under `/var/www/rmm/versions/`. A symlink at `/var/www/rmm/dist` points to the active one. Nginx follows the symlink transparently — no reload needed.
 
 ```
+~/yolo-frontend/                    (this repo — your workspace)
+  repos/
+    tacticalrmm-web/               (cloned frontend repo)
+    my-fork/                       (another repo)
+  install.sh, trmm-frontend-*, ...
+
 /var/www/rmm/
-  dist -> versions/main/          (symlink)
+  dist -> versions/main/           (symlink to active version)
   versions/
-    main/                         (your stable build)
-    frontend-rework/              (branch build)
-    custom-fields-branch/         (another branch build)
+    main/                          (stable build)
+    frontend-rework/               (branch build)
+    my-fork--feature-x/            (build from another repo)
 ```
 
-Switching versions = atomic symlink swap. You can do it from:
-- **The dashboard** — right-click the version number in the header
-- **VSCode** — Command Palette > "Run Task" > pick a Frontend task
-- **The terminal** — `trmm-frontend-versions switch <name>`
+Switch versions from:
+- **Dashboard** — right-click the version number in the header
+- **VSCode** — Command Palette > "Run Task"
+- **Terminal** — `trmm-frontend-versions switch <name>`
 
 ---
 
-## Initial Setup
+## Prerequisites
 
-Clone the repo and run the installer:
+A working [Tactical RMM](https://github.com/amidaware/tacticalrmm) installation.
+
+## Setup
+
+One command to bootstrap everything:
+
+```bash
+wget https://raw.githubusercontent.com/<user>/yolo-frontend/main/install.sh
+chmod +x install.sh
+sudo ./install.sh
+```
+
+This clones the yolo-frontend repo into `~/yolo-frontend/`, then runs the full install.
+
+Alternatively, clone first and customize `yolo.conf` before installing:
 
 ```bash
 git clone <repo-url> ~/yolo-frontend
-sudo ~/yolo-frontend/install.sh
+cd ~/yolo-frontend
+# Edit yolo.conf to set DEFAULT_REPO_URL, DEFAULT_REPO_NAME, etc.
+sudo ./install.sh
 ```
 
 The installer:
-1. Backs up original Django and Vue files
-2. Migrates `/var/www/rmm/dist` to a versioned symlink structure
-3. Patches the Django API with version-switching endpoints
-4. Patches the frontend with a right-click version menu
-5. Symlinks CLI tools (`trmm-frontend-build`, `trmm-frontend-versions`) to `/usr/local/bin`
-6. Restarts Django services
-7. Builds and deploys the current frontend as the initial "main" version
+1. Clones the default frontend repo into `repos/`
+2. Backs up original Django and Vue files
+3. Migrates `/var/www/rmm/dist` to a versioned symlink structure
+4. Patches the Django API with version-switching endpoints
+5. Patches the frontend with a right-click version menu
+6. Symlinks CLI tools to `/usr/local/bin`
+7. Restarts Django services
+8. Builds and deploys the initial "main" version
 
-Verify it worked:
+Verify:
 ```bash
-ls -la /var/www/rmm/dist
-# Should show: dist -> /var/www/rmm/versions/main
 trmm-frontend-versions list
-# Should show: * main  (active)
+# * main  (active)
 ```
 
 ---
 
-## Building and Deploying a Version
+## Managing Repos
 
-From the `tacticalrmm-web` directory, on any branch:
+Frontend source repos are cloned under `~/yolo-frontend/repos/`. The default repo is cloned by `install.sh`. Add more any time:
 
 ```bash
-# Build current branch and store it (does NOT change what's live)
+# Add a repo (name defaults to URL basename)
+trmm-frontend-repo add https://github.com/user/tacticalrmm-web.git my-fork
+
+# List all repos
+trmm-frontend-repo list
+
+# Fetch latest from all remotes
+trmm-frontend-repo update
+
+# Fetch a specific repo
+trmm-frontend-repo update my-fork
+
+# Remove a repo
+trmm-frontend-repo remove my-fork
+```
+
+After adding a repo, switch branches and build:
+```bash
+cd ~/yolo-frontend/repos/my-fork
+git checkout feature-branch
+trmm-frontend-build
+```
+
+---
+
+## Building Versions
+
+```bash
+# Build default repo, current branch (version name = branch name)
 trmm-frontend-build
 
-# Build with a custom name instead of the branch name
+# Build from a specific repo
+trmm-frontend-build --repo my-fork
+
+# Custom version name
 trmm-frontend-build --name my-experiment
 
-# Build AND immediately make it the live version
+# Build and immediately activate
 trmm-frontend-build --activate
 ```
 
-The script:
-- Detects the git branch name automatically (sanitizes `feature/foo` to `feature-foo`)
-- Runs `npm run build`
-- Copies the built files to `/var/www/rmm/versions/<name>/`
-- Copies `env-config.js` from `/var/www/rmm-bak/dist/env-config.js`
+Version labels:
+- **Single repo**: label = branch name (e.g., `develop`)
+- **Multiple repos**: label = `reponame--branchname` (e.g., `my-fork--develop`)
+- **`--name`**: always overrides the automatic label
+
+The build script auto-detects which repo you're in if you `cd` into `repos/<name>/`.
 
 ### Typical workflow
 
 ```bash
-cd /home/tacadmin/tacticalrmm-web
+cd ~/yolo-frontend/repos/tacticalrmm-web
 git checkout my-feature-branch
-trmm-frontend-build
-# Now go to the dashboard, right-click the version number, and switch to "my-feature-branch"
+trmm-frontend-build --activate
 ```
 
 ---
 
-## Managing Versions (CLI)
+## Managing Versions
 
 ```bash
 # List all versions (marks the active one)
 trmm-frontend-versions list
-#   * main  (active)
-#     frontend-rework
-#     custom-fields-branch
 
 # Show which version is currently live
 trmm-frontend-versions active
@@ -105,66 +154,58 @@ trmm-frontend-versions remove old-experiment
 
 ## VSCode Tasks
 
-Open the Command Palette (`Ctrl+Shift+P`) > **Tasks: Run Task** to access these:
+Open the Command Palette (`Ctrl+Shift+P`) > **Tasks: Run Task**:
 
 | Task | What it does |
 |------|-------------|
-| **Frontend: Build & Deploy** | Builds current branch, deploys to `versions/<branch>`. Prompts for optional custom name. Does NOT change what's live. |
-| **Frontend: Build, Deploy & Activate** | Same as above, but also switches the live symlink to the new build immediately. |
-| **Frontend: Switch Version** | Prompts for a version name from the deployed list, switches the live symlink. |
-| **Frontend: List Versions** | Prints all deployed versions and marks the active one. |
-| **Frontend: Delete Version** | Prompts for a version name, removes it (refuses if it's the active one). |
-
-These tasks call the same shell scripts in `~/yolo-frontend/`, so the terminal and VSCode workflows are interchangeable.
+| **Frontend: Dev Server Start (9000)** | Start dev server for a repo |
+| **Frontend: Dev Server Stop** | Stop the dev server |
+| **Frontend: Build & Deploy** | Build a branch, deploy to versions. Does NOT change what's live. |
+| **Frontend: Build, Deploy & Activate** | Build and immediately switch the live version. |
+| **Frontend: Switch Version** | Switch the active version. |
+| **Frontend: List Versions** | List all deployed versions. |
+| **Frontend: Delete Version** | Remove a deployed version. |
+| **Frontend: Add Repo** | Clone a new frontend repo. |
+| **Frontend: List Repos** | List all cloned repos. |
+| **Frontend: Update Repos** | Fetch latest from all repo remotes. |
 
 ---
 
-## Switching from the Dashboard (Right-Click Menu)
+## Dashboard Switching
 
 1. Log into the TacticalRMM dashboard
-2. Right-click the version number in the top-left header (e.g., "v1.4.0")
-3. A context menu appears listing all available versions with a checkmark on the active one
-4. Click any version to switch — the page reloads with the new frontend
+2. Right-click the version number in the header (e.g., "v1.4.0")
+3. Select a version from the context menu
+4. Page reloads with the new frontend
 
-This calls the Django API endpoints:
-- `GET /core/frontendversions/` — lists versions
-- `POST /core/frontendversions/switch/` — switches the symlink
-
-Requires `Core Settings` view/edit permissions.
+API endpoints (requires Core Settings permissions):
+- `GET /core/frontendversions/` — list versions
+- `POST /core/frontendversions/switch/` — switch version
 
 ---
 
-## Files Involved
+## Files
 
 | File | Purpose |
 |------|---------|
-| `install.sh` | Install everything on a production TRMM server |
+| `yolo.conf` | Configuration (paths, default repo, users) |
+| `install.sh` | Install on a production TRMM server |
 | `uninstall.sh` | Revert all changes, restore to stock |
-| `yolo.conf` | Configuration (paths, users, groups) |
 | `trmm-frontend-build` | Build and deploy a branch as a named version |
-| `trmm-frontend-versions` | CLI version management (list/switch/remove) |
-| `frontend-migrate-to-versioned.sh` | Filesystem migration (called by install.sh) |
-| `frontend-revert-to-prod.sh` | Filesystem revert (called by uninstall.sh) |
-| `patches/` | Patch files for Django API and Vue frontend |
+| `trmm-frontend-versions` | Version management (list/switch/remove) |
+| `trmm-frontend-repo` | Repo management (add/list/remove/update) |
+| `patches/` | Django API and Vue frontend patches |
+| `.vscode/` | VSCode tasks, settings, extensions |
 
 ---
 
-## Undoing Everything (Reverting to Standard Single-Version Setup)
-
-Run the uninstaller to revert all changes:
+## Uninstalling
 
 ```bash
 sudo ~/yolo-frontend/uninstall.sh
 ```
 
-What it does:
-1. Reverts `/var/www/rmm/dist` from symlink back to a regular directory
-2. Restores original Django and Vue files from backup
-3. Removes CLI tool symlinks from `/usr/local/bin`
-4. Restarts Django services
-5. Rebuilds and deploys the original frontend (skip with `--skip-rebuild`)
-
-After running this you're back to the original setup — single dist directory, no symlinks, no version-switching API or UI.
+This reverts everything: restores original files from backup, removes the versioned symlink structure, removes CLI symlinks, restarts services. Cloned repos in `repos/` are preserved (delete manually if desired).
 
 ---
 
@@ -172,32 +213,24 @@ After running this you're back to the original setup — single dist directory, 
 
 **Frontend returns 404 / blank page after switching:**
 ```bash
-# Check the symlink is valid
 ls -la /var/www/rmm/dist
 readlink -f /var/www/rmm/dist
-# Make sure the target directory exists and has index.html
 ls /var/www/rmm/dist/index.html
 ```
 
-**Permission denied when switching versions from the UI:**
+**Permission denied when switching from the UI:**
 ```bash
-# The /var/www/rmm/ directory must be owned by tacadmin
 ls -la /var/www/rmm/
-# Fix if needed:
 sudo chown -R tacadmin:www-data /var/www/rmm/
 ```
 
 **Build script can't find env-config.js:**
 ```bash
-# Check the backup file exists
 cat /var/www/rmm-bak/dist/env-config.js
-# Should contain: window._env_ = {PROD_URL: "https://api.davidthegeek.com"}
 ```
 
 **Version not appearing in right-click menu:**
 ```bash
-# Verify the version directory exists
 ls /var/www/rmm/versions/
-# Check the API endpoint directly
-curl -H "Authorization: Token YOUR_TOKEN" https://api.davidthegeek.com/core/frontendversions/
+curl -H "Authorization: Token YOUR_TOKEN" https://api.your-domain.com/core/frontendversions/
 ```

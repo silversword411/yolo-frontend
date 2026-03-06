@@ -1,0 +1,180 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Frontend: Dev Server Start (9000)",
+      "type": "shell",
+      "command": "bash",
+      "args": [
+        "-lc",
+        "repo=\"${input:repoName}\"; if [ -z \"$repo\" ]; then repo=\"tacticalrmm-web\"; fi; cd \"${workspaceFolder}/repos/$repo\" && npm run dev -- --port 9000"
+      ],
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "custom",
+        "pattern": [
+          {
+            "regexp": ".*"
+          }
+        ],
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": ".*",
+          "endsPattern": "(ready in|Local:\\s+https?://localhost:9000|localhost:9000)"
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "Frontend: Dev Server Stop",
+      "type": "shell",
+      "command": "bash",
+      "args": ["-lc", "lsof -ti:9000 | xargs -r kill"],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Frontend: Build & Deploy",
+      "type": "shell",
+      "command": "bash",
+      "args": [
+        "-lc",
+        "repo=\"${input:repoName}\"; name=\"${input:versionName}\"; cmd=\"trmm-frontend-build\"; if [ -n \"$repo\" ]; then cmd=\"$cmd --repo $repo\"; fi; if [ -n \"$name\" ]; then cmd=\"$cmd --name $name\"; fi; eval $cmd"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "focus": true
+      }
+    },
+    {
+      "label": "Frontend: Build, Deploy & Activate",
+      "type": "shell",
+      "command": "bash",
+      "args": [
+        "-lc",
+        "repo=\"${input:repoName}\"; name=\"${input:versionName}\"; cmd=\"trmm-frontend-build --activate\"; if [ -n \"$repo\" ]; then cmd=\"$cmd --repo $repo\"; fi; if [ -n \"$name\" ]; then cmd=\"$cmd --name $name\"; fi; eval $cmd"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "focus": true
+      }
+    },
+    {
+      "label": "Frontend: Switch Version",
+      "type": "shell",
+      "command": "bash",
+      "args": ["-lc", "trmm-frontend-versions switch \"${input:switchVersion}\""],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "focus": true
+      }
+    },
+    {
+      "label": "Frontend: List Versions",
+      "type": "shell",
+      "command": "bash",
+      "args": ["-lc", "trmm-frontend-versions list"],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "focus": true
+      }
+    },
+    {
+      "label": "Frontend: Delete Version",
+      "type": "shell",
+      "command": "bash",
+      "args": ["-lc", "trmm-frontend-versions remove \"${input:deleteVersion}\""],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "focus": true
+      }
+    },
+    {
+      "label": "Frontend: Add Repo",
+      "type": "shell",
+      "command": "bash",
+      "args": [
+        "-lc",
+        "url=\"${input:repoUrl}\"; name=\"${input:newRepoName}\"; if [ -n \"$name\" ]; then trmm-frontend-repo add \"$url\" \"$name\"; else trmm-frontend-repo add \"$url\"; fi"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "focus": true
+      }
+    },
+    {
+      "label": "Frontend: List Repos",
+      "type": "shell",
+      "command": "bash",
+      "args": ["-lc", "trmm-frontend-repo list"],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "focus": true
+      }
+    },
+    {
+      "label": "Frontend: Update Repos",
+      "type": "shell",
+      "command": "bash",
+      "args": ["-lc", "trmm-frontend-repo update"],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "focus": true
+      }
+    }
+  ],
+  "inputs": [
+    {
+      "id": "repoName",
+      "type": "promptString",
+      "description": "Repo name (leave empty for default)"
+    },
+    {
+      "id": "versionName",
+      "type": "promptString",
+      "description": "Version name (leave empty to use git branch name)"
+    },
+    {
+      "id": "switchVersion",
+      "type": "promptString",
+      "description": "Version name to switch to (run 'Frontend: List Versions' to see available)"
+    },
+    {
+      "id": "deleteVersion",
+      "type": "promptString",
+      "description": "Version name to delete (cannot delete the active version)"
+    },
+    {
+      "id": "repoUrl",
+      "type": "promptString",
+      "description": "Git URL of the frontend repo to clone"
+    },
+    {
+      "id": "newRepoName",
+      "type": "promptString",
+      "description": "Name for the repo (leave empty to use URL basename)"
+    }
+  ]
+}

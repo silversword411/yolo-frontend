@@ -1,18 +1,20 @@
 #!/bin/bash
 # trmm-frontend-build
-# Build the current git branch and deploy it as a named frontend version.
+# Build a git branch from a managed repo and deploy it as a named frontend version.
 #
 # Usage:
-#   trmm-frontend-build              # Build and deploy, name from git branch
-#   trmm-frontend-build --name foo   # Build and deploy with custom name
-#   trmm-frontend-build --activate   # Also switch the live symlink to this version
+#   trmm-frontend-build                       # Build default repo, current branch
+#   trmm-frontend-build --repo myrepo         # Build from named repo
+#   trmm-frontend-build --name foo            # Custom version label
+#   trmm-frontend-build --activate            # Make it live immediately
 set -e
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
 source "$SCRIPT_DIR/yolo.conf"
 
 # Parse arguments
 VERSION_NAME=""
+REPO_NAME=""
 ACTIVATE=false
 
 while [[ $# -gt 0 ]]; do
@@ -21,21 +23,46 @@ while [[ $# -gt 0 ]]; do
             VERSION_NAME="$2"
             shift 2
             ;;
+        --repo)
+            REPO_NAME="$2"
+            shift 2
+            ;;
         --activate)
             ACTIVATE=true
             shift
             ;;
         *)
             echo "Unknown option: $1"
-            echo "Usage: trmm-frontend-build [--name <name>] [--activate]"
+            echo "Usage: trmm-frontend-build [--repo <name>] [--name <name>] [--activate]"
             exit 1
             ;;
     esac
 done
 
+# Resolve which repo to build from
+if [ -n "$REPO_NAME" ]; then
+    FRONTEND_SRC="$REPOS_DIR/$REPO_NAME"
+    if [ ! -d "$FRONTEND_SRC" ]; then
+        echo "Error: Repo '$REPO_NAME' not found in $REPOS_DIR"
+        echo "Available repos:"
+        ls -1 "$REPOS_DIR" 2>/dev/null || echo "  (none)"
+        exit 1
+    fi
+elif [ -d ".git" ] && [[ "$(pwd)" == "$REPOS_DIR"/* ]]; then
+    FRONTEND_SRC="$(git rev-parse --show-toplevel)"
+    REPO_NAME="$(basename "$FRONTEND_SRC")"
+else
+    REPO_NAME="$DEFAULT_REPO_NAME"
+    FRONTEND_SRC="$REPOS_DIR/$REPO_NAME"
+    if [ ! -d "$FRONTEND_SRC" ]; then
+        echo "Error: Default repo '$REPO_NAME' not found. Run install.sh or trmm-frontend-repo add."
+        exit 1
+    fi
+fi
+
 # Check prerequisites
 if [ ! -d "$VERSIONS_DIR" ]; then
-    echo "Error: $VERSIONS_DIR does not exist. Run frontend-migrate-to-versioned.sh first."
+    echo "Error: $VERSIONS_DIR does not exist. Run install.sh first."
     exit 1
 fi
 
@@ -47,25 +74,37 @@ fi
 # Determine version name from git branch if not provided
 if [ -z "$VERSION_NAME" ]; then
     cd "$FRONTEND_SRC"
-    VERSION_NAME=$(git rev-parse --abbrev-ref HEAD)
-fi
+    BRANCH=$(git rev-parse --abbrev-ref HEAD | sed 's/\//-/g')
 
-# Sanitize branch name for filesystem (replace / with -)
-VERSION_NAME=$(echo "$VERSION_NAME" | sed 's/\//-/g')
+    # If multiple repos exist, prefix with repo name to avoid collisions
+    REPO_COUNT=$(ls -1d "$REPOS_DIR"/*/ 2>/dev/null | wc -l)
+    if [ "$REPO_COUNT" -le 1 ]; then
+        VERSION_NAME="$BRANCH"
+    else
+        VERSION_NAME="${REPO_NAME}--${BRANCH}"
+    fi
+fi
 
 VERSION_PATH="$VERSIONS_DIR/$VERSION_NAME"
 
 echo "========================================"
 echo "Frontend Build & Deploy"
 echo "========================================"
-echo "Source:  $FRONTEND_SRC"
-echo "Version: $VERSION_NAME"
-echo "Target:  $VERSION_PATH"
+echo "Repo:     $REPO_NAME ($FRONTEND_SRC)"
+echo "Version:  $VERSION_NAME"
+echo "Target:   $VERSION_PATH"
 echo "Activate: $ACTIVATE"
 echo "========================================"
 
-# Build
+# Ensure node_modules is up to date
 cd "$FRONTEND_SRC"
+if [ ! -d "node_modules" ] || [ "package-lock.json" -nt "node_modules/.package-lock.json" ]; then
+    echo ""
+    echo "Running npm install..."
+    npm install
+fi
+
+# Build
 echo ""
 echo "Running npm run build..."
 npm run build

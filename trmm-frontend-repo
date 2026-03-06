@@ -1,0 +1,123 @@
+#!/bin/bash
+# trmm-frontend-repo
+# Manage frontend source repositories under ~/yolo-frontend/repos/.
+#
+# Usage:
+#   trmm-frontend-repo add <url> [name]    Clone a repo (name defaults to URL basename)
+#   trmm-frontend-repo list                List all repos with remote URL and branch
+#   trmm-frontend-repo remove <name>       Remove a cloned repo
+#   trmm-frontend-repo update [name]       Fetch all remotes (all repos if no name)
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
+source "$SCRIPT_DIR/yolo.conf"
+
+repo_name_from_url() {
+    basename "$1" .git
+}
+
+ensure_repos_dir() {
+    mkdir -p "$REPOS_DIR"
+}
+
+case "${1:-}" in
+    add)
+        if [ -z "${2:-}" ]; then
+            echo "Usage: trmm-frontend-repo add <url> [name]"
+            exit 1
+        fi
+        URL="$2"
+        NAME="${3:-$(repo_name_from_url "$URL")}"
+
+        ensure_repos_dir
+
+        if [ -d "$REPOS_DIR/$NAME" ]; then
+            echo "Error: Repo '$NAME' already exists at $REPOS_DIR/$NAME"
+            echo "  Remove it first: trmm-frontend-repo remove $NAME"
+            exit 1
+        fi
+
+        echo "Cloning $URL -> $REPOS_DIR/$NAME"
+        git clone "$URL" "$REPOS_DIR/$NAME"
+
+        echo ""
+        echo "Running npm install..."
+        cd "$REPOS_DIR/$NAME"
+        npm install
+
+        echo ""
+        echo "Repo '$NAME' is ready."
+        echo "  Build with: trmm-frontend-build --repo $NAME"
+        ;;
+
+    list)
+        if [ ! -d "$REPOS_DIR" ] || [ -z "$(ls -A "$REPOS_DIR" 2>/dev/null)" ]; then
+            echo "No repos found in $REPOS_DIR"
+            echo "  Add one: trmm-frontend-repo add <url> [name]"
+            exit 0
+        fi
+
+        echo "Frontend repos:"
+        for dir in "$REPOS_DIR"/*/; do
+            [ -d "$dir" ] || continue
+            name=$(basename "$dir")
+            url="(not a git repo)"
+            branch="—"
+            if [ -d "$dir/.git" ]; then
+                url=$(git -C "$dir" remote get-url origin 2>/dev/null || echo "(no remote)")
+                branch=$(git -C "$dir" rev-parse --abbrev-ref HEAD 2>/dev/null || echo "?")
+            fi
+            echo "  $name"
+            echo "    remote: $url"
+            echo "    branch: $branch"
+        done
+        ;;
+
+    remove)
+        if [ -z "${2:-}" ]; then
+            echo "Usage: trmm-frontend-repo remove <name>"
+            exit 1
+        fi
+        NAME="$2"
+        TARGET="$REPOS_DIR/$NAME"
+
+        if [ ! -d "$TARGET" ]; then
+            echo "Error: Repo '$NAME' not found in $REPOS_DIR"
+            exit 1
+        fi
+
+        rm -rf "$TARGET"
+        echo "Removed repo: $NAME"
+        ;;
+
+    update)
+        NAME="${2:-}"
+
+        if [ -n "$NAME" ]; then
+            TARGET="$REPOS_DIR/$NAME"
+            if [ ! -d "$TARGET" ]; then
+                echo "Error: Repo '$NAME' not found in $REPOS_DIR"
+                exit 1
+            fi
+            echo "Fetching $NAME..."
+            git -C "$TARGET" fetch --all
+        else
+            if [ ! -d "$REPOS_DIR" ] || [ -z "$(ls -A "$REPOS_DIR" 2>/dev/null)" ]; then
+                echo "No repos found in $REPOS_DIR"
+                exit 0
+            fi
+            for dir in "$REPOS_DIR"/*/; do
+                [ -d "$dir/.git" ] || continue
+                name=$(basename "$dir")
+                echo "Fetching $name..."
+                git -C "$dir" fetch --all
+            done
+        fi
+        echo "Done."
+        ;;
+
+    *)
+        echo "Usage: trmm-frontend-repo {add <url> [name]|list|remove <name>|update [name]}"
+        exit 1
+        ;;
+esac

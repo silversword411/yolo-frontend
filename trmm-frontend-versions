@@ -9,14 +9,14 @@
 #   trmm-frontend-versions remove <name>     # Remove a version (not if active)
 set -e
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
 source "$SCRIPT_DIR/yolo.conf"
 
 get_active() {
     if [ -L "$DIST_SYMLINK" ]; then
         basename "$(readlink -f "$DIST_SYMLINK")"
     else
-        echo "(not a symlink - run frontend-migrate-to-versioned.sh first)"
+        echo "(not a symlink - run install.sh first)"
     fi
 }
 
