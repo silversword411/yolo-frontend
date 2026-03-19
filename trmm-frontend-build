@@ -76,13 +76,8 @@ if [ -z "$VERSION_NAME" ]; then
     cd "$FRONTEND_SRC"
     BRANCH=$(git rev-parse --abbrev-ref HEAD | sed 's/\//-/g')
 
-    # If multiple repos exist, prefix with repo name to avoid collisions
-    REPO_COUNT=$(ls -1d "$REPOS_DIR"/*/ 2>/dev/null | wc -l)
-    if [ "$REPO_COUNT" -le 1 ]; then
-        VERSION_NAME="$BRANCH"
-    else
-        VERSION_NAME="${REPO_NAME}--${BRANCH}"
-    fi
+    # Always prefix with repo name for clarity
+    VERSION_NAME="${REPO_NAME}--${BRANCH}"
 fi
 
 VERSION_PATH="$VERSIONS_DIR/$VERSION_NAME"

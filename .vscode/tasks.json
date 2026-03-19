@@ -32,7 +32,10 @@
       "label": "Frontend: Dev Server Stop",
       "type": "shell",
       "command": "bash",
-      "args": ["-lc", "lsof -ti:9000 | xargs -r kill"],
+      "args": [
+        "-lc",
+        "pids=$(ss -tlnp | grep :9000 | grep -oP \"pid=\\K[0-9]+\" | sort -u | tr \"\\n\" \" \" ); [ -n \"$pids\" ] && kill $pids || true"
+      ],
       "problemMatcher": [],
       "presentation": {
         "reveal": "always",
@@ -73,7 +76,10 @@
       "label": "Frontend: Switch Version",
       "type": "shell",
       "command": "bash",
-      "args": ["-lc", "trmm-frontend-versions switch \"${input:switchVersion}\""],
+      "args": [
+        "-lc",
+        "trmm-frontend-versions switch \"${input:switchVersion}\""
+      ],
       "problemMatcher": [],
       "presentation": {
         "reveal": "always",
@@ -97,7 +103,10 @@
       "label": "Frontend: Delete Version",
       "type": "shell",
       "command": "bash",
-      "args": ["-lc", "trmm-frontend-versions remove \"${input:deleteVersion}\""],
+      "args": [
+        "-lc",
+        "trmm-frontend-versions remove \"${input:deleteVersion}\""
+      ],
       "problemMatcher": [],
       "presentation": {
         "reveal": "always",

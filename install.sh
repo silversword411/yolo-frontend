@@ -247,10 +247,57 @@ echo "  Services restarted."
 # ---------- Phase 10: Build and deploy frontend ----------
 
 echo ""
-echo "Building and deploying frontend as 'main' version..."
+echo "Building and deploying frontend from default repo..."
 sudo -u "$DEPLOY_USER" bash -c "
-    '$SCRIPT_DIR/trmm-frontend-build' --repo '$DEFAULT_REPO_NAME' --name main --activate
+    '$SCRIPT_DIR/trmm-frontend-build' --repo '$DEFAULT_REPO_NAME' --activate
 "
+
+# ---------- Phase 10b: Clone, patch, and build extra repos ----------
+
+if [ -n "$EXTRA_REPOS" ]; then
+    echo ""
+    echo "Setting up extra repos..."
+    for EXTRA_ENTRY in $EXTRA_REPOS; do
+        # Parse URL@branch format
+        EXTRA_URL="${EXTRA_ENTRY%%@*}"
+        EXTRA_BRANCH=""
+        if [[ "$EXTRA_ENTRY" == *@* ]]; then
+            EXTRA_BRANCH="${EXTRA_ENTRY#*@}"
+        fi
+
+        EXTRA_NAME=$(repo_name_from_url "$EXTRA_URL")
+        EXTRA_PATH="$REPOS_DIR/$EXTRA_NAME"
+        EXTRA_MAINLAYOUT="$EXTRA_PATH/src/layouts/MainLayout.vue"
+
+        if [ -d "$EXTRA_PATH" ]; then
+            echo "  Repo '$EXTRA_NAME' already exists, skipping clone."
+        else
+            CLONE_ARGS=("$EXTRA_URL" "$EXTRA_PATH")
+            if [ -n "$EXTRA_BRANCH" ]; then
+                CLONE_ARGS=(-b "$EXTRA_BRANCH" "${CLONE_ARGS[@]}")
+            fi
+            echo "  Cloning $EXTRA_URL${EXTRA_BRANCH:+ (branch: $EXTRA_BRANCH)} -> $EXTRA_PATH"
+            sudo -u "$DEPLOY_USER" git clone "${CLONE_ARGS[@]}"
+        fi
+
+        echo "  Running npm install for $EXTRA_NAME..."
+        sudo -u "$DEPLOY_USER" bash -c "cd '$EXTRA_PATH' && npm install"
+
+        # Patch MainLayout.vue for version switching (best-effort)
+        if [ -f "$EXTRA_MAINLAYOUT" ] && ! grep -q "loadFrontendVersions" "$EXTRA_MAINLAYOUT"; then
+            echo "  Patching MainLayout.vue for $EXTRA_NAME..."
+            if patch --forward --batch -p1 -d "$EXTRA_PATH" < "$PATCHES_DIR/mainlayout-vue.patch" 2>/dev/null; then
+                echo "    Done."
+            else
+                echo "    Warning: Patch did not apply cleanly to $EXTRA_NAME. Version switcher may not appear in this build."
+            fi
+        fi
+
+        echo "  Building $EXTRA_NAME..."
+        sudo -u "$DEPLOY_USER" bash -c \
+            "'$SCRIPT_DIR/trmm-frontend-build' --repo '$EXTRA_NAME'"
+    done
+fi
 
 # ---------- Phase 11: Write state file ----------
 

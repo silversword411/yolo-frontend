@@ -6,7 +6,7 @@
  from contextlib import suppress
  from pathlib import Path
 
-@@ -792,3 +793,58 @@ class OpenAICodeCompletion(APIView):
+@@ -792,3 +793,66 @@ class OpenAICodeCompletion(APIView):
              )
 
          return Response(response_data["choices"][0]["message"]["content"])
@@ -14,6 +14,14 @@
 +
 +FRONTEND_VERSIONS_DIR = Path("/var/www/rmm/versions")
 +FRONTEND_DIST_SYMLINK = Path("/var/www/rmm/dist")
++
++
++def _version_sort_key(entry):
++    """PROD versions first, then alphabetical."""
++    name = entry.name
++    if name.upper().startswith("PROD"):
++        return (0, name)
++    return (1, name)
 +
 +
 +class GetFrontendVersions(APIView):
@@ -28,7 +36,7 @@
 +            active = FRONTEND_DIST_SYMLINK.resolve().name
 +
 +        versions = []
-+        for entry in sorted(FRONTEND_VERSIONS_DIR.iterdir()):
++        for entry in sorted(FRONTEND_VERSIONS_DIR.iterdir(), key=_version_sort_key):
 +            if entry.is_dir():
 +                versions.append(
 +                    {

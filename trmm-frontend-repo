@@ -12,10 +12,6 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
 source "$SCRIPT_DIR/yolo.conf"
 
-repo_name_from_url() {
-    basename "$1" .git
-}
-
 ensure_repos_dir() {
     mkdir -p "$REPOS_DIR"
 }
@@ -23,10 +19,15 @@ ensure_repos_dir() {
 case "${1:-}" in
     add)
         if [ -z "${2:-}" ]; then
-            echo "Usage: trmm-frontend-repo add <url> [name]"
+            echo "Usage: trmm-frontend-repo add <url[@branch]> [name]"
             exit 1
         fi
-        URL="$2"
+        URL_INPUT="$2"
+        URL="${URL_INPUT%%@*}"
+        BRANCH=""
+        if [[ "$URL_INPUT" == *@* ]]; then
+            BRANCH="${URL_INPUT#*@}"
+        fi
         NAME="${3:-$(repo_name_from_url "$URL")}"
 
         ensure_repos_dir
@@ -37,8 +38,12 @@ case "${1:-}" in
             exit 1
         fi
 
-        echo "Cloning $URL -> $REPOS_DIR/$NAME"
-        git clone "$URL" "$REPOS_DIR/$NAME"
+        CLONE_ARGS=("$URL" "$REPOS_DIR/$NAME")
+        if [ -n "$BRANCH" ]; then
+            CLONE_ARGS=(-b "$BRANCH" "${CLONE_ARGS[@]}")
+        fi
+        echo "Cloning $URL${BRANCH:+ (branch: $BRANCH)} -> $REPOS_DIR/$NAME"
+        git clone "${CLONE_ARGS[@]}"
 
         echo ""
         echo "Running npm install..."

@@ -24,9 +24,15 @@ case "${1:-list}" in
     list)
         ACTIVE=$(get_active)
         echo "Frontend versions:"
-        for dir in "$VERSIONS_DIR"/*/; do
+        # PROD versions first, then the rest alphabetically
+        for dir in "$VERSIONS_DIR"/PROD*/ "$VERSIONS_DIR"/*/; do
             [ -d "$dir" ] || continue
             name=$(basename "$dir")
+            # Skip PROD entries in the second glob pass
+            case "$dir" in
+                "$VERSIONS_DIR"/PROD*/) ;;
+                *) [[ "$name" == PROD* ]] && continue ;;
+            esac
             if [ "$name" = "$ACTIVE" ]; then
                 echo "  * $name  (active)"
             else
@@ -74,9 +80,15 @@ case "${1:-list}" in
         ;;
     names)
         # Machine-readable list of version names (used by VSCode tasks)
-        for dir in "$VERSIONS_DIR"/*/; do
+        # PROD versions first, then the rest alphabetically
+        for dir in "$VERSIONS_DIR"/PROD*/ "$VERSIONS_DIR"/*/; do
             [ -d "$dir" ] || continue
-            basename "$dir"
+            name=$(basename "$dir")
+            case "$dir" in
+                "$VERSIONS_DIR"/PROD*/) ;;
+                *) [[ "$name" == PROD* ]] && continue ;;
+            esac
+            echo "$name"
         done
         ;;
     *)
