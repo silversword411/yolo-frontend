@@ -14,7 +14,10 @@
         "owner": "custom",
         "pattern": [
           {
-            "regexp": ".*"
+            "regexp": "^never-match()()()",
+            "file": 1,
+            "line": 2,
+            "message": 3
           }
         ],
         "background": {
