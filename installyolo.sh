@@ -221,8 +221,12 @@ echo "Patching MainLayout.vue..."
 if grep -q "loadFrontendVersions" "$MAINLAYOUT"; then
     echo "  Already patched, skipping."
 else
-    patch --forward --batch -p1 -d "$DEFAULT_REPO_PATH" < "$PATCHES_DIR/mainlayout-vue.patch"
-    echo "  Done."
+    if patch --forward --batch -p1 -d "$DEFAULT_REPO_PATH" < "$PATCHES_DIR/mainlayout-vue.patch"; then
+        echo "  Done."
+    else
+        echo "  Warning: MainLayout.vue patch did not apply cleanly."
+        echo "  Continuing without version-switcher UI in this repo."
+    fi
 fi
 
 # ---------- Phase 8: Symlink CLI tools ----------
