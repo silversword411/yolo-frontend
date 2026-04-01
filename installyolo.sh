@@ -68,6 +68,8 @@ if [ ! -f "$(dirname "$(readlink -f "$0")")/yolo.conf" ]; then
         sudo -u "$DEPLOY_USER" git clone "$YOLO_REPO_URL" "$YOLO_INSTALL_DIR"
     fi
 
+    chown -R "$DEPLOY_USER:$DEPLOY_USER" "$YOLO_INSTALL_DIR"
+
     echo "Handing off to $YOLO_INSTALL_DIR/installyolo.sh..."
     echo ""
     exec "$YOLO_INSTALL_DIR/installyolo.sh" "$@"
@@ -133,7 +135,7 @@ echo "TRMM Version: $TRMM_VERSION  (will preserve current frontend as $PROD_VERS
 
 echo ""
 echo "Setting up default frontend repo..."
-mkdir -p "$REPOS_DIR"
+sudo -u "$DEPLOY_USER" mkdir -p "$REPOS_DIR"
 
 if [ -d "$DEFAULT_REPO_PATH" ]; then
     echo "  Repo already exists at $DEFAULT_REPO_PATH, skipping clone."
@@ -156,7 +158,7 @@ fi
 
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 BACKUP_DIR="$BACKUP_BASE/$TIMESTAMP"
-mkdir -p "$BACKUP_DIR"
+sudo -u "$DEPLOY_USER" mkdir -p "$BACKUP_DIR"
 
 cp "$CORE_VIEWS" "$BACKUP_DIR/views.py"
 cp "$CORE_URLS" "$BACKUP_DIR/urls.py"
