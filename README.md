@@ -11,7 +11,7 @@ Each frontend build is stored as a named version under `/var/www/rmm/versions/`.
   repos/
     tacticalrmm-web/               (cloned frontend repo)
     my-fork/                       (another repo)
-  install.sh, trmm-frontend-*, ...
+  installyolo.sh, trmm-frontend-*, ...
 
 /var/www/rmm/
   dist -> versions/main/           (symlink to active version)
@@ -38,9 +38,9 @@ A working [Tactical RMM](https://github.com/amidaware/tacticalrmm) installation.
 One command to bootstrap everything:
 
 ```bash
-wget https://raw.githubusercontent.com/silversword411/yolo-frontend/master/install.sh
-chmod +x install.sh
-sudo ./install.sh
+wget https://raw.githubusercontent.com/silversword411/yolo-frontend/master/installyolo.sh
+chmod +x installyolo.sh
+sudo ./installyolo.sh
 ```
 
 This clones the yolo-frontend repo into `~/yolo-frontend/`, then runs the full install.
@@ -51,7 +51,7 @@ Alternatively, clone first and customize `yolo.conf` before installing:
 git clone <repo-url> ~/yolo-frontend
 cd ~/yolo-frontend
 # Edit yolo.conf to set DEFAULT_REPO_URL, DEFAULT_REPO_NAME, etc.
-sudo ./install.sh
+sudo ./installyolo.sh
 ```
 
 The installer:
@@ -76,7 +76,7 @@ trmm-frontend-versions list
 
 ## Managing Repos
 
-Frontend source repos are cloned under `~/yolo-frontend/repos/`. The default repo is cloned by `install.sh`. Add more any time:
+Frontend source repos are cloned under `~/yolo-frontend/repos/`. The default repo is cloned by `installyolo.sh`. Add more any time:
 
 ```bash
 # Add a repo (name defaults to URL basename)
@@ -195,8 +195,8 @@ API endpoints (requires Core Settings permissions):
 | File                     | Purpose                                      |
 | ------------------------ | -------------------------------------------- |
 | `yolo.conf`              | Configuration (paths, default repo, users)   |
-| `install.sh`             | Install on a production TRMM server          |
-| `uninstall.sh`           | Revert all changes, restore to stock         |
+| `installyolo.sh`             | Install on a production TRMM server          |
+| `uninstallyolo.sh`           | Revert all changes, restore to stock         |
 | `trmm-frontend-build`    | Build and deploy a branch as a named version |
 | `trmm-frontend-versions` | Version management (list/switch/remove)      |
 | `trmm-frontend-repo`     | Repo management (add/list/remove/update)     |
@@ -208,7 +208,7 @@ API endpoints (requires Core Settings permissions):
 ## Uninstalling
 
 ```bash
-sudo ~/yolo-frontend/uninstall.sh
+sudo ~/yolo-frontend/uninstallyolo.sh
 ```
 
 This reverts everything: restores original files from backup, removes the versioned symlink structure, removes CLI symlinks, restarts services. Cloned repos in `repos/` are preserved (delete manually if desired).

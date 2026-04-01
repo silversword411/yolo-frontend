@@ -16,7 +16,7 @@ get_active() {
     if [ -L "$DIST_SYMLINK" ]; then
         basename "$(readlink -f "$DIST_SYMLINK")"
     else
-        echo "(not a symlink - run install.sh first)"
+        echo "(not a symlink - run installyolo.sh first)"
     fi
 }
 

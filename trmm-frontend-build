@@ -55,14 +55,14 @@ else
     REPO_NAME="$DEFAULT_REPO_NAME"
     FRONTEND_SRC="$REPOS_DIR/$REPO_NAME"
     if [ ! -d "$FRONTEND_SRC" ]; then
-        echo "Error: Default repo '$REPO_NAME' not found. Run install.sh or trmm-frontend-repo add."
+        echo "Error: Default repo '$REPO_NAME' not found. Run installyolo.sh or trmm-frontend-repo add."
         exit 1
     fi
 fi
 
 # Check prerequisites
 if [ ! -d "$VERSIONS_DIR" ]; then
-    echo "Error: $VERSIONS_DIR does not exist. Run install.sh first."
+    echo "Error: $VERSIONS_DIR does not exist. Run installyolo.sh first."
     exit 1
 fi
 

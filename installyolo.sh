@@ -1,14 +1,14 @@
 #!/bin/bash
-# install.sh — Set up multi-frontend version switching on a production TRMM server.
+# installyolo.sh — Set up multi-frontend version switching on a production TRMM server.
 #
 # Usage (bootstrap — run from anywhere):
-#   wget https://raw.githubusercontent.com/<user>/yolo-frontend/main/install.sh
-#   chmod +x install.sh
-#   sudo ./install.sh
+#   wget https://raw.githubusercontent.com/<user>/yolo-frontend/main/installyolo.sh
+#   chmod +x installyolo.sh
+#   sudo ./installyolo.sh
 #
 # Usage (from inside the repo):
-#   sudo ./install.sh            # First-time install
-#   sudo ./install.sh --force    # Reinstall (overwrites previous state)
+#   sudo ./installyolo.sh            # First-time install
+#   sudo ./installyolo.sh --force    # Reinstall (overwrites previous state)
 #
 # What it does:
 #   1. Clones the yolo-frontend repo (if running standalone)
@@ -33,7 +33,7 @@ if [ ! -f "$(dirname "$(readlink -f "$0")")/yolo.conf" ]; then
     echo "========================================"
 
     if [ "$(id -u)" -ne 0 ]; then
-        echo "Error: install.sh must be run with sudo."
+        echo "Error: installyolo.sh must be run with sudo."
         echo "Usage: sudo $0"
         exit 1
     fi
@@ -68,9 +68,9 @@ if [ ! -f "$(dirname "$(readlink -f "$0")")/yolo.conf" ]; then
         sudo -u "$DEPLOY_USER" git clone "$YOLO_REPO_URL" "$YOLO_INSTALL_DIR"
     fi
 
-    echo "Handing off to $YOLO_INSTALL_DIR/install.sh..."
+    echo "Handing off to $YOLO_INSTALL_DIR/installyolo.sh..."
     echo ""
-    exec "$YOLO_INSTALL_DIR/install.sh" "$@"
+    exec "$YOLO_INSTALL_DIR/installyolo.sh" "$@"
 fi
 
 # ---------- Normal install (running from inside the repo) ----------
@@ -85,7 +85,7 @@ PATCHES_DIR="$SCRIPT_DIR/patches"
 # ---------- Phase 0: Guards ----------
 
 if [ "$(id -u)" -ne 0 ]; then
-    echo "Error: install.sh must be run with sudo."
+    echo "Error: installyolo.sh must be run with sudo."
     echo "Usage: sudo $0 [--force]"
     exit 1
 fi
@@ -93,7 +93,7 @@ fi
 if [ -f "$STATE_FILE" ] && [ "$1" != "--force" ]; then
     echo "Error: yolo-frontend is already installed."
     echo "  Installed at: $(grep 'installed_at' "$STATE_FILE" | cut -d= -f2)"
-    echo "  Run with --force to reinstall, or run uninstall.sh first."
+    echo "  Run with --force to reinstall, or run uninstallyolo.sh first."
     exit 1
 fi
 
@@ -327,5 +327,5 @@ echo "  Right-click the version number in the dashboard to switch versions."
 echo ""
 echo "  Add more repos:  trmm-frontend-repo add <url> [name]"
 echo "  Backup:          $BACKUP_DIR"
-echo "  To uninstall:    sudo $SCRIPT_DIR/uninstall.sh"
+echo "  To uninstall:    sudo $SCRIPT_DIR/uninstallyolo.sh"
 echo "========================================"
