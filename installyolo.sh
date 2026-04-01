@@ -218,15 +218,11 @@ fi
 # ---------- Phase 7: Patch MainLayout.vue ----------
 
 echo "Patching MainLayout.vue..."
-if grep -q "loadFrontendVersions" "$MAINLAYOUT"; then
-    echo "  Already patched, skipping."
+if "$SCRIPT_DIR/patch-mainlayout.sh" "$MAINLAYOUT"; then
+    :
 else
-    if patch --forward --batch -p1 -d "$DEFAULT_REPO_PATH" < "$PATCHES_DIR/mainlayout-vue.patch"; then
-        echo "  Done."
-    else
-        echo "  Warning: MainLayout.vue patch did not apply cleanly."
-        echo "  Continuing without version-switcher UI in this repo."
-    fi
+    echo "  Warning: MainLayout.vue injection failed."
+    echo "  Continuing without version-switcher UI in this repo."
 fi
 
 # ---------- Phase 8: Symlink CLI tools ----------
@@ -290,12 +286,12 @@ if [ -n "$EXTRA_REPOS" ]; then
         sudo -u "$DEPLOY_USER" bash -c "cd '$EXTRA_PATH' && npm install"
 
         # Patch MainLayout.vue for version switching (best-effort)
-        if [ -f "$EXTRA_MAINLAYOUT" ] && ! grep -q "loadFrontendVersions" "$EXTRA_MAINLAYOUT"; then
+        if [ -f "$EXTRA_MAINLAYOUT" ]; then
             echo "  Patching MainLayout.vue for $EXTRA_NAME..."
-            if patch --forward --batch -p1 -d "$EXTRA_PATH" < "$PATCHES_DIR/mainlayout-vue.patch" 2>/dev/null; then
-                echo "    Done."
+            if "$SCRIPT_DIR/patch-mainlayout.sh" "$EXTRA_MAINLAYOUT"; then
+                :
             else
-                echo "    Warning: Patch did not apply cleanly to $EXTRA_NAME. Version switcher may not appear in this build."
+                echo "    Warning: Injection failed for $EXTRA_NAME. Version switcher may not appear in this build."
             fi
         fi
 
