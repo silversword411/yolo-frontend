@@ -38,7 +38,7 @@ A working [Tactical RMM](https://github.com/amidaware/tacticalrmm) installation.
 One command to bootstrap everything:
 
 ```bash
-wget https://raw.githubusercontent.com/silversword411/yolo-frontend/master/installyolo.sh
+wget -N https://raw.githubusercontent.com/silversword411/yolo-frontend/master/installyolo.sh
 chmod +x installyolo.sh
 sudo ./installyolo.sh
 ```
@@ -195,8 +195,8 @@ API endpoints (requires Core Settings permissions):
 | File                     | Purpose                                      |
 | ------------------------ | -------------------------------------------- |
 | `yolo.conf`              | Configuration (paths, default repo, users)   |
-| `installyolo.sh`             | Install on a production TRMM server          |
-| `uninstallyolo.sh`           | Revert all changes, restore to stock         |
+| `installyolo.sh`         | Install on a production TRMM server          |
+| `uninstallyolo.sh`       | Revert all changes, restore to stock         |
 | `trmm-frontend-build`    | Build and deploy a branch as a named version |
 | `trmm-frontend-versions` | Version management (list/switch/remove)      |
 | `trmm-frontend-repo`     | Repo management (add/list/remove/update)     |
