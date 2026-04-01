@@ -22,6 +22,7 @@ Each frontend build is stored as a named version under `/var/www/rmm/versions/`.
 ```
 
 Switch versions from:
+
 - **Dashboard** — right-click the version number in the header
 - **VSCode** — Command Palette > "Run Task"
 - **Terminal** — `trmm-frontend-versions switch <name>`
@@ -37,7 +38,7 @@ A working [Tactical RMM](https://github.com/amidaware/tacticalrmm) installation.
 One command to bootstrap everything:
 
 ```bash
-wget https://raw.githubusercontent.com/<user>/yolo-frontend/main/install.sh
+wget https://raw.githubusercontent.com/silversword411/yolo-frontend/main/install.sh
 chmod +x install.sh
 sudo ./install.sh
 ```
@@ -54,6 +55,7 @@ sudo ./install.sh
 ```
 
 The installer:
+
 1. Clones the default frontend repo into `repos/`
 2. Backs up original Django and Vue files
 3. Migrates `/var/www/rmm/dist` to a versioned symlink structure
@@ -64,6 +66,7 @@ The installer:
 8. Builds and deploys the initial "main" version
 
 Verify:
+
 ```bash
 trmm-frontend-versions list
 # * main  (active)
@@ -93,6 +96,7 @@ trmm-frontend-repo remove my-fork
 ```
 
 After adding a repo, switch branches and build:
+
 ```bash
 cd ~/yolo-frontend/repos/my-fork
 git checkout feature-branch
@@ -118,6 +122,7 @@ trmm-frontend-build --activate
 ```
 
 Version labels:
+
 - **Single repo**: label = branch name (e.g., `develop`)
 - **Multiple repos**: label = `reponame--branchname` (e.g., `my-fork--develop`)
 - **`--name`**: always overrides the automatic label
@@ -156,18 +161,18 @@ trmm-frontend-versions remove old-experiment
 
 Open the Command Palette (`Ctrl+Shift+P`) > **Tasks: Run Task**:
 
-| Task | What it does |
-|------|-------------|
-| **Frontend: Dev Server Start (9000)** | Start dev server for a repo |
-| **Frontend: Dev Server Stop** | Stop the dev server |
-| **Frontend: Build & Deploy** | Build a branch, deploy to versions. Does NOT change what's live. |
-| **Frontend: Build, Deploy & Activate** | Build and immediately switch the live version. |
-| **Frontend: Switch Version** | Switch the active version. |
-| **Frontend: List Versions** | List all deployed versions. |
-| **Frontend: Delete Version** | Remove a deployed version. |
-| **Frontend: Add Repo** | Clone a new frontend repo. |
-| **Frontend: List Repos** | List all cloned repos. |
-| **Frontend: Update Repos** | Fetch latest from all repo remotes. |
+| Task                                   | What it does                                                     |
+| -------------------------------------- | ---------------------------------------------------------------- |
+| **Frontend: Dev Server Start (9000)**  | Start dev server for a repo                                      |
+| **Frontend: Dev Server Stop**          | Stop the dev server                                              |
+| **Frontend: Build & Deploy**           | Build a branch, deploy to versions. Does NOT change what's live. |
+| **Frontend: Build, Deploy & Activate** | Build and immediately switch the live version.                   |
+| **Frontend: Switch Version**           | Switch the active version.                                       |
+| **Frontend: List Versions**            | List all deployed versions.                                      |
+| **Frontend: Delete Version**           | Remove a deployed version.                                       |
+| **Frontend: Add Repo**                 | Clone a new frontend repo.                                       |
+| **Frontend: List Repos**               | List all cloned repos.                                           |
+| **Frontend: Update Repos**             | Fetch latest from all repo remotes.                              |
 
 ---
 
@@ -179,6 +184,7 @@ Open the Command Palette (`Ctrl+Shift+P`) > **Tasks: Run Task**:
 4. Page reloads with the new frontend
 
 API endpoints (requires Core Settings permissions):
+
 - `GET /core/frontendversions/` — list versions
 - `POST /core/frontendversions/switch/` — switch version
 
@@ -186,16 +192,16 @@ API endpoints (requires Core Settings permissions):
 
 ## Files
 
-| File | Purpose |
-|------|---------|
-| `yolo.conf` | Configuration (paths, default repo, users) |
-| `install.sh` | Install on a production TRMM server |
-| `uninstall.sh` | Revert all changes, restore to stock |
-| `trmm-frontend-build` | Build and deploy a branch as a named version |
-| `trmm-frontend-versions` | Version management (list/switch/remove) |
-| `trmm-frontend-repo` | Repo management (add/list/remove/update) |
-| `patches/` | Django API and Vue frontend patches |
-| `.vscode/` | VSCode tasks, settings, extensions |
+| File                     | Purpose                                      |
+| ------------------------ | -------------------------------------------- |
+| `yolo.conf`              | Configuration (paths, default repo, users)   |
+| `install.sh`             | Install on a production TRMM server          |
+| `uninstall.sh`           | Revert all changes, restore to stock         |
+| `trmm-frontend-build`    | Build and deploy a branch as a named version |
+| `trmm-frontend-versions` | Version management (list/switch/remove)      |
+| `trmm-frontend-repo`     | Repo management (add/list/remove/update)     |
+| `patches/`               | Django API and Vue frontend patches          |
+| `.vscode/`               | VSCode tasks, settings, extensions           |
 
 ---
 
@@ -212,6 +218,7 @@ This reverts everything: restores original files from backup, removes the versio
 ## Troubleshooting
 
 **Frontend returns 404 / blank page after switching:**
+
 ```bash
 ls -la /var/www/rmm/dist
 readlink -f /var/www/rmm/dist
@@ -219,17 +226,20 @@ ls /var/www/rmm/dist/index.html
 ```
 
 **Permission denied when switching from the UI:**
+
 ```bash
 ls -la /var/www/rmm/
 sudo chown -R tacadmin:www-data /var/www/rmm/
 ```
 
 **Build script can't find env-config.js:**
+
 ```bash
 cat /var/www/rmm-bak/dist/env-config.js
 ```
 
 **Version not appearing in right-click menu:**
+
 ```bash
 ls /var/www/rmm/versions/
 curl -H "Authorization: Token YOUR_TOKEN" https://api.your-domain.com/core/frontendversions/
