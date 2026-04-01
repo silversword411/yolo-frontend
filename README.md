@@ -38,7 +38,7 @@ A working [Tactical RMM](https://github.com/amidaware/tacticalrmm) installation.
 One command to bootstrap everything:
 
 ```bash
-wget https://raw.githubusercontent.com/silversword411/yolo-frontend/main/install.sh
+wget https://raw.githubusercontent.com/silversword411/yolo-frontend/master/install.sh
 chmod +x install.sh
 sudo ./install.sh
 ```
