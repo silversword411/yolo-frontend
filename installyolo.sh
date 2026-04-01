@@ -2,7 +2,7 @@
 # installyolo.sh — Set up multi-frontend version switching on a production TRMM server.
 #
 # Usage (bootstrap — run from anywhere):
-#   wget https://raw.githubusercontent.com/<user>/yolo-frontend/main/installyolo.sh
+#   wget https://raw.githubusercontent.com/silversword411/yolo-frontend/main/installyolo.sh
 #   chmod +x installyolo.sh
 #   sudo ./installyolo.sh
 #
@@ -24,7 +24,7 @@ set -e
 
 # ---------- Bootstrap: clone repo if running standalone ----------
 
-YOLO_REPO_URL="${YOLO_REPO_URL:-https://github.com/<user>/yolo-frontend.git}"
+YOLO_REPO_URL="${YOLO_REPO_URL:-https://github.com/silversword411/yolo-frontend.git}"
 YOLO_INSTALL_DIR="${YOLO_INSTALL_DIR:-$HOME/yolo-frontend}"
 
 if [ ! -f "$(dirname "$(readlink -f "$0")")/yolo.conf" ]; then
